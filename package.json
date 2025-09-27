@@ -1,0 +1,26 @@
+{
+  "name": "mern-ecommerce",
+  "version": "1.0.0",
+  "description": "",
+  "main": "index.js",
+  "scripts": {
+  "start": "node backend/server.js",
+  "dev": "concurrently \"npm run dev --prefix backend\" \"npm start --prefix frontend\"",
+  "test": "echo \"Error: no test specified\" && exit 1"
+},
+
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/trishulshetty/jharkhand_ecom.git"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/trishulshetty/jharkhand_ecom/issues"
+  },
+  "homepage": "https://github.com/trishulshetty/jharkhand_ecom#readme",
+  "devDependencies": {
+    "concurrently": "^9.2.1"
+  }
+}
