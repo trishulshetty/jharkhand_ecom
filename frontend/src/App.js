@@ -5,7 +5,7 @@ import { Elements, CardElement, useStripe, useElements } from '@stripe/react-str
 import './App.css';
 
 // --- Global Config ---
-const API_URL = 'http://localhost:5000/api';
+const API_URL = process.env.REACT_APP_API_URL || 'http://localhost:5000/api';
 // This is your public key, it's safe to be here.
 const STRIPE_PUBLISHABLE_KEY = 'pk_test_51SBi3L7cTFRYZBmvme4HtkAvE4naWHZIleb90F6FzPV16ZGYeub4K12vtiXuu8VoU15yUKhOldC2h3Go5llxZLlD00v4iof5Fq';
 const stripePromise = loadStripe(STRIPE_PUBLISHABLE_KEY);
