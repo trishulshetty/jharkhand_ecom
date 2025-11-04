@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { Routes, Route, useNavigate, useParams, Link } from 'react-router-dom';
 import axios from 'axios';
 import { loadStripe } from '@stripe/stripe-js';
 import { Elements, CardElement, useStripe, useElements } from '@stripe/react-stripe-js';
@@ -18,11 +19,9 @@ function Notification({ message, type }) {
 
 // --- Main App Component ---
 function App() {
-    const [page, setPage] = useState('home');
     const [user, setUser] = useState(null);
     const [products, setProducts] = useState([]);
     const [cart, setCart] = useState([]);
-    const [selectedProduct, setSelectedProduct] = useState(null);
     const [notification, setNotification] = useState(null);
     const [checkoutData, setCheckoutData] = useState(null);
 
@@ -55,7 +54,6 @@ function App() {
     const handleLogin = (userInfo) => {
         setUser(userInfo);
         localStorage.setItem('userInfo', JSON.stringify(userInfo));
-        setPage(userInfo.role === 'seller' ? 'sellerDashboard' : 'home');
     };
 
     const handleLogout = () => {
@@ -63,7 +61,6 @@ function App() {
         setCart([]);
         localStorage.removeItem('userInfo');
         localStorage.removeItem('cart');
-        setPage('home');
     };
     
     const addToCart = (product, qty = 1) => {
@@ -87,42 +84,32 @@ function App() {
     
     const startCheckout = (cartData, addressData) => {
         setCheckoutData({ cart: cartData, shippingAddress: addressData });
-        navigate('redirecting');
-    };
-
-    const navigate = (pageName, product = null) => {
-        if (product) setSelectedProduct(product);
-        setPage(pageName);
-    };
-
-    const renderPage = () => {
-        switch (page) {
-            case 'login': return <LoginPage onLogin={handleLogin} setPage={setPage} />;
-            case 'register': return <RegisterPage onLogin={handleLogin} setPage={setPage} />;
-            case 'productDetail': return <ProductDetailPage product={selectedProduct} addToCart={addToCart} navigate={navigate} showNotification={showNotification} />;
-            case 'cart': return <CartPage cart={cart} updateCartQty={updateCartQty} removeFromCart={removeFromCart} user={user} navigate={navigate} showNotification={showNotification} startCheckout={startCheckout} />;
-            case 'redirecting': return <RedirectingPage navigate={navigate} />;
-            case 'payment':
-                return (
-                    <Elements stripe={stripePromise}>
-                        <PaymentPage user={user} checkoutData={checkoutData} showNotification={showNotification} navigate={navigate} clearCart={() => setCart([])} />
-                    </Elements>
-                );
-            case 'orderSuccess': return <OrderSuccessPage navigate={navigate} />;
-            case 'myOrders': return <MyOrdersPage user={user} navigate={navigate} />;
-            case 'sellerDashboard': return <SellerDashboard user={user} navigate={navigate} />;
-            case 'addProduct': return <AddProductPage user={user} navigate={navigate} fetchProducts={fetchProducts} showNotification={showNotification} />;
-            case 'manageOrders': return <SellerOrdersPage user={user} navigate={navigate} />;
-            default: return <HomePage products={products} navigate={navigate} />;
-        }
     };
 
     return (
         <div className="app-container">
             {notification && <Notification message={notification.message} type={notification.type} />}
-            {page === 'redirecting' && <div className="blur-background" />}
-            <Header user={user} onLogout={handleLogout} navigate={navigate} cartCount={cart.reduce((acc, item) => acc + item.qty, 0)} />
-            <main>{renderPage()}</main>
+            <Header user={user} onLogout={handleLogout} cartCount={cart.reduce((acc, item) => acc + item.qty, 0)} />
+            <main>
+                <Routes>
+                    <Route path="/" element={<HomePage products={products} />} />
+                    <Route path="/login" element={<LoginPage onLogin={handleLogin} />} />
+                    <Route path="/register" element={<RegisterPage onLogin={handleLogin} />} />
+                    <Route path="/p/:slug" element={<ProductDetailPage products={products} addToCart={addToCart} showNotification={showNotification} />} />
+                    <Route path="/cart" element={<CartPage cart={cart} updateCartQty={updateCartQty} removeFromCart={removeFromCart} user={user} showNotification={showNotification} startCheckout={startCheckout} />} />
+                    <Route path="/redirecting" element={<RedirectingPage />} />
+                    <Route path="/payment" element={
+                        <Elements stripe={stripePromise}>
+                            <PaymentPage user={user} checkoutData={checkoutData} showNotification={showNotification} clearCart={() => setCart([])} />
+                        </Elements>
+                    } />
+                    <Route path="/order-success" element={<OrderSuccessPage />} />
+                    <Route path="/my-orders" element={<MyOrdersPage user={user} />} />
+                    <Route path="/seller-dashboard" element={<SellerDashboard user={user} />} />
+                    <Route path="/add-product" element={<AddProductPage user={user} fetchProducts={fetchProducts} showNotification={showNotification} />} />
+                    <Route path="/manage-orders" element={<SellerOrdersPage user={user} />} />
+                </Routes>
+            </main>
             <Footer />
         </div>
     );
@@ -130,10 +117,11 @@ function App() {
 
 // --- Page Components ---
 
-function RedirectingPage({ navigate }) {
+function RedirectingPage() {
+    const navigate = useNavigate();
     useEffect(() => {
         const timer = setTimeout(() => {
-            navigate('payment');
+            navigate('/payment');
         }, 3000);
         return () => clearTimeout(timer);
     }, [navigate]);
@@ -149,10 +137,11 @@ function RedirectingPage({ navigate }) {
     );
 }
 
-function PaymentPage({ user, checkoutData, showNotification, navigate, clearCart }) {
+function PaymentPage({ user, checkoutData, showNotification, clearCart }) {
+    const navigate = useNavigate();
     useEffect(() => {
         if (!checkoutData) {
-            navigate('cart');
+            navigate('/cart');
         }
     }, [checkoutData, navigate]);
 
@@ -222,7 +211,7 @@ function CheckoutForm({ user, cart, shippingAddress, showNotification, navigate,
                 
                 showNotification('Payment successful! Order placed.', 'success');
                 clearCart();
-                navigate('orderSuccess');
+                navigate('/order-success');
             }
         } catch (error) {
             console.error('Checkout error:', error);
@@ -242,7 +231,8 @@ function CheckoutForm({ user, cart, shippingAddress, showNotification, navigate,
     );
 }
 
-function CartPage({ cart, updateCartQty, removeFromCart, user, navigate, showNotification, startCheckout }) {
+function CartPage({ cart, updateCartQty, removeFromCart, user, showNotification, startCheckout }) {
+    const navigate = useNavigate();
     const [shippingAddress, setShippingAddress] = useState({ address: '', city: '', postalCode: '', country: '' });
 
     const handleInputChange = (e) => {
@@ -252,7 +242,7 @@ function CartPage({ cart, updateCartQty, removeFromCart, user, navigate, showNot
     const handleProceedToCheckout = () => {
         if (!user) {
             showNotification('Please log in to proceed.', 'error');
-            navigate('login');
+            navigate('/login');
             return;
         }
         if (!shippingAddress.address || !shippingAddress.city || !shippingAddress.postalCode || !shippingAddress.country) {
@@ -260,6 +250,7 @@ function CartPage({ cart, updateCartQty, removeFromCart, user, navigate, showNot
             return;
         }
         startCheckout(cart, shippingAddress);
+        navigate('/redirecting');
     };
     
     const totalPrice = cart.reduce((acc, item) => acc + item.qty * item.price, 0);
@@ -267,7 +258,7 @@ function CartPage({ cart, updateCartQty, removeFromCart, user, navigate, showNot
     return (
         <div className="page-container cart-container">
             <h1>Shopping Cart</h1>
-            {cart.length === 0 ? <p>Your cart is empty. <span className="link" onClick={() => navigate('home')}>Go Shopping</span></p> : (
+            {cart.length === 0 ? <p>Your cart is empty. <Link to="/" className="link">Go Shopping</Link></p> : (
                 <>
                     <div className="cart-items">
                         {cart.map(item => (
@@ -308,29 +299,29 @@ function CartPage({ cart, updateCartQty, removeFromCart, user, navigate, showNot
 
 // --- All other components remain the same ---
 
-function Header({ user, onLogout, navigate, cartCount }) {
+function Header({ user, onLogout, cartCount }) {
     return (
         <header className="header">
-            <div className="logo" onClick={() => navigate('home')}>Jharkhand AI Tourism</div>
+            <Link to="/" className="logo">Jharkhand AI Tourism</Link>
             <nav>
                 {user ? (
                     <>
                         {user.role === 'buyer' && (
                             <>
-                                <button onClick={() => navigate('cart')}>Cart ({cartCount})</button>
-                                <button onClick={() => navigate('myOrders')}>My Orders</button>
+                                <Link to="/cart"><button>Cart ({cartCount})</button></Link>
+                                <Link to="/my-orders"><button>My Orders</button></Link>
                             </>
                         )}
                         {user.role === 'seller' && (
-                            <button onClick={() => navigate('sellerDashboard')}>Dashboard</button>
+                            <Link to="/seller-dashboard"><button>Dashboard</button></Link>
                         )}
                         <span>Hello, {user.name}</span>
                         <button onClick={onLogout}>Logout</button>
                     </>
                 ) : (
                     <>
-                        <button onClick={() => navigate('login')}>Login</button>
-                        <button onClick={() => navigate('register')}>Register</button>
+                        <Link to="/login"><button>Login</button></Link>
+                        <Link to="/register"><button>Register</button></Link>
                     </>
                 )}
             </nav>
@@ -338,31 +329,37 @@ function Header({ user, onLogout, navigate, cartCount }) {
     );
 }
 
-function HomePage({ products, navigate }) {
+function HomePage({ products }) {
     return (
         <div className="page-container">
             <h1>Featured Products</h1>
             <div className="product-grid">
                 {products.map((product) => (
-                    <ProductCard key={product._id} product={product} navigate={navigate} />
+                    <ProductCard key={product._id} product={product} />
                 ))}
             </div>
         </div>
     );
 }
 
-function ProductCard({ product, navigate }) {
+function ProductCard({ product }) {
+    const slug = `${product.name.toLowerCase().replace(/[^a-z0-9]+/g, '-')}-${product._id}`;
     return (
-        <div className="card product-card" onClick={() => navigate('productDetail', product)}>
+        <Link to={`/p/${slug}`} className="card product-card">
             <img src={product.images[0]} alt={product.name} className="product-image" />
             <h3>{product.name}</h3>
-            <p className="price">${product.price.toFixed(2)}</p>
-        </div>
+            <p className="price">₹{product.price.toFixed(2)}</p>
+        </Link>
     );
 }
 
-function ProductDetailPage({ product, addToCart, navigate, showNotification }) {
+function ProductDetailPage({ products, addToCart, showNotification }) {
+    const { slug } = useParams();
+    const navigate = useNavigate();
     const [qty, setQty] = useState(1);
+    
+    const productId = slug.split('-').pop();
+    const product = products.find(p => p._id === productId);
     
     if(!product) return <div>Loading...</div>;
 
@@ -373,7 +370,7 @@ function ProductDetailPage({ product, addToCart, navigate, showNotification }) {
 
     return (
         <div className="page-container product-detail-container">
-            <button onClick={() => navigate('home')} className="back-btn">&larr; Back to Products</button>
+            <button onClick={() => navigate('/')} className="back-btn">&larr; Back to Products</button>
             <div className="product-detail-content">
                 <div className="product-detail-images">
                     {product.images.map((img, index) => (
@@ -382,7 +379,7 @@ function ProductDetailPage({ product, addToCart, navigate, showNotification }) {
                 </div>
                 <div className="product-detail-info">
                     <h1>{product.name}</h1>
-                    <p className="price">${product.price.toFixed(2)}</p>
+                    <p className="price">₹{product.price.toFixed(2)}</p>
                     <p>{product.description}</p>
                     <p>Status: {product.countInStock > 0 ? 'In Stock' : 'Out of Stock'}</p>
                     {product.countInStock > 0 && (
@@ -401,20 +398,20 @@ function ProductDetailPage({ product, addToCart, navigate, showNotification }) {
     );
 }
 
-function OrderSuccessPage({ navigate }) {
+function OrderSuccessPage() {
     return (
         <div className="page-container center-content">
             <div className="card">
                 <h2>Order Placed Successfully!</h2>
                 <p>Thank you for your purchase.</p>
-                <button onClick={() => navigate('myOrders')}>View My Orders</button>
-                <button onClick={() => navigate('home')}>Continue Shopping</button>
+                <Link to="/my-orders"><button>View My Orders</button></Link>
+                <Link to="/"><button>Continue Shopping</button></Link>
             </div>
         </div>
     );
 }
 
-function MyOrdersPage({ user, navigate }) {
+function MyOrdersPage({ user }) {
     const [orders, setOrders] = useState([]);
 
     useEffect(() => {
@@ -461,7 +458,8 @@ function MyOrdersPage({ user, navigate }) {
 }
 
 
-function LoginPage({ onLogin, setPage }) {
+function LoginPage({ onLogin }) {
+    const navigate = useNavigate();
     const [email, setEmail] = useState('');
     const [password, setPassword] = useState('');
     const [error, setError] = useState('');
@@ -472,6 +470,7 @@ function LoginPage({ onLogin, setPage }) {
             const config = { headers: { 'Content-Type': 'application/json' } };
             const { data } = await axios.post(`${API_URL}/users/login`, { email, password }, config);
             onLogin(data);
+            navigate(data.role === 'seller' ? '/seller-dashboard' : '/');
         } catch (err) {
             setError(err.response?.data?.message || 'An error occurred');
         }
@@ -487,13 +486,14 @@ function LoginPage({ onLogin, setPage }) {
                     <input type="password" placeholder="Password" value={password} onChange={(e) => setPassword(e.target.value)} required />
                     <button type="submit">Login</button>
                 </form>
-                <p>New here? <span className="link" onClick={() => setPage('register')}>Register</span></p>
+                <p>New here? <Link to="/register" className="link">Register</Link></p>
             </div>
         </div>
     );
 }
 
-function RegisterPage({ onLogin, setPage }) {
+function RegisterPage({ onLogin }) {
+    const navigate = useNavigate();
     const [name, setName] = useState('');
     const [email, setEmail] = useState('');
     const [password, setPassword] = useState('');
@@ -506,6 +506,7 @@ function RegisterPage({ onLogin, setPage }) {
             const config = { headers: { 'Content-Type': 'application/json' } };
             const { data } = await axios.post(`${API_URL}/users/register`, { name, email, password, role }, config);
             onLogin(data);
+            navigate(data.role === 'seller' ? '/seller-dashboard' : '/');
         } catch (err) {
             setError(err.response?.data?.message || 'An error occurred');
         }
@@ -532,27 +533,28 @@ function RegisterPage({ onLogin, setPage }) {
                     </div>
                     <button type="submit">Register</button>
                 </form>
-                <p>Already have an account? <span className="link" onClick={() => setPage('login')}>Login</span></p>
+                <p>Already have an account? <Link to="/login" className="link">Login</Link></p>
             </div>
         </div>
     );
 }
 
 
-function SellerDashboard({ user, navigate }) {
+function SellerDashboard({ user }) {
     return (
         <div className="page-container seller-dashboard">
             <h1>Seller Dashboard</h1>
             <p>Welcome, {user.name}!</p>
             <div className="dashboard-actions">
-                <button onClick={() => navigate('addProduct')}>Add New Product</button>
-                <button onClick={() => navigate('manageOrders')}>Manage Orders</button>
+                <Link to="/add-product"><button>Add New Product</button></Link>
+                <Link to="/manage-orders"><button>Manage Orders</button></Link>
             </div>
         </div>
     );
 }
 
-function AddProductPage({ user, navigate, fetchProducts, showNotification }) {
+function AddProductPage({ user, fetchProducts, showNotification }) {
+    const navigate = useNavigate();
     const [name, setName] = useState('');
     const [price, setPrice] = useState('');
     const [countInStock, setCountInStock] = useState('');
@@ -604,7 +606,7 @@ function AddProductPage({ user, navigate, fetchProducts, showNotification }) {
             await axios.post(`${API_URL}/products`, productData, config);
             showNotification('Product added successfully!', 'success');
             fetchProducts();
-            navigate('sellerDashboard');
+            navigate('/seller-dashboard');
         } catch (err) {
             setError(err.response?.data?.message || 'Failed to add product');
         }
@@ -632,7 +634,7 @@ function AddProductPage({ user, navigate, fetchProducts, showNotification }) {
     );
 }
 
-function SellerOrdersPage({ user, navigate }) {
+function SellerOrdersPage({ user }) {
     const [orders, setOrders] = useState([]);
     
     useEffect(() => {

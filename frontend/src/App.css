@@ -243,6 +243,16 @@ button:disabled {
   cursor: pointer;
 }
 
+/* Link styling for navigation */
+a {
+  text-decoration: none;
+  color: inherit;
+}
+
+.logo {
+  cursor: pointer;
+}
+
 /* --- Product Detail Page --- */
 .product-detail-content {
     display: flex;
