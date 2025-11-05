@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Routes, Route, useNavigate, useParams, Link } from 'react-router-dom';
+import { Routes, Route, useNavigate, useParams, Link, useLocation } from 'react-router-dom';
 import axios from 'axios';
 import { loadStripe } from '@stripe/stripe-js';
 import { Elements, CardElement, useStripe, useElements } from '@stripe/react-stripe-js';
@@ -19,6 +19,8 @@ function Notification({ message, type }) {
 
 // --- Main App Component ---
 function App() {
+    const location = useLocation();
+    const navigate = useNavigate();
     const [user, setUser] = useState(null);
     const [products, setProducts] = useState([]);
     const [cart, setCart] = useState([]);
@@ -29,6 +31,15 @@ function App() {
         setNotification({ message, type });
         setTimeout(() => setNotification(null), 3000);
     };
+
+    useEffect(() => {
+        // Handle redirect from 404.html
+        const redirectPath = sessionStorage.getItem('redirectPath');
+        if (redirectPath) {
+            sessionStorage.removeItem('redirectPath');
+            navigate(redirectPath, { replace: true });
+        }
+    }, [navigate]);
 
     useEffect(() => {
         const storedUser = localStorage.getItem('userInfo');
