@@ -118,6 +118,7 @@ function App() {
                     <Route path="/my-orders" element={<MyOrdersPage user={user} />} />
                     <Route path="/seller-dashboard" element={<SellerDashboard user={user} />} />
                     <Route path="/add-product" element={<AddProductPage user={user} fetchProducts={fetchProducts} showNotification={showNotification} />} />
+                    <Route path="/manage-products" element={<ManageProductsPage user={user} showNotification={showNotification} />} />
                     <Route path="/manage-orders" element={<SellerOrdersPage user={user} />} />
                 </Routes>
             </main>
@@ -583,6 +584,7 @@ function SellerDashboard({ user }) {
             <p>Welcome, {user.name}!</p>
             <div className="dashboard-actions">
                 <Link to="/add-product"><button>Add New Product</button></Link>
+                <Link to="/manage-products"><button>Manage Products</button></Link>
                 <Link to="/manage-orders"><button>Manage Orders</button></Link>
             </div>
         </div>
@@ -710,6 +712,93 @@ function SellerOrdersPage({ user }) {
                                     </li>
                                 ))}
                             </ul>
+                        </div>
+                    ))}
+                </div>
+            )}
+        </div>
+    );
+}
+
+function ManageProductsPage({ user, showNotification }) {
+    const [items, setItems] = useState([]);
+    const [loading, setLoading] = useState(true);
+    const [savingId, setSavingId] = useState(null);
+
+    useEffect(() => {
+        const fetchMine = async () => {
+            if (!user) return;
+            try {
+                const { data } = await axios.get(`${API_URL}/products/mine`, {
+                    headers: { Authorization: `Bearer ${user.token}` },
+                });
+                setItems(data.map(p => ({ ...p, _price: p.price, _stock: p.countInStock })));
+            } catch (e) {
+                console.error('Failed to fetch products', e);
+            } finally {
+                setLoading(false);
+            }
+        };
+        fetchMine();
+    }, [user]);
+
+    const updateLocal = (id, field, value) => {
+        setItems(prev => prev.map(it => it._id === id ? { ...it, [field]: value } : it));
+    };
+
+    const saveChanges = async (product) => {
+        setSavingId(product._id);
+        try {
+            const payload = {
+                price: Number(product._price),
+                countInStock: Number(product._stock),
+            };
+            await axios.put(`${API_URL}/products/${product._id}`, payload, {
+                headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${user.token}` },
+            });
+            showNotification('Product updated', 'success');
+            setItems(prev => prev.map(it => it._id === product._id ? { ...it, price: payload.price, countInStock: payload.countInStock } : it));
+        } catch (e) {
+            console.error('Failed to update product', e);
+            showNotification('Failed to update product', 'error');
+        } finally {
+            setSavingId(null);
+        }
+    };
+
+    if (!user) return <div className="page-container"><p>Please login as seller.</p></div>;
+
+    return (
+        <div className="page-container">
+            <h1>Manage Products</h1>
+            {loading ? (
+                <p>Loading...</p>
+            ) : items.length === 0 ? (
+                <p>No products yet. <Link to="/add-product" className="link">Add one</Link></p>
+            ) : (
+                <div className="product-manage-list">
+                    {items.map(p => (
+                        <div key={p._id} className="card product-manage-item">
+                            <div className="pm-left">
+                                <img src={p.images?.[0]} alt={p.name} style={{ width: 80, height: 80, objectFit: 'cover', borderRadius: 6 }} />
+                                <div className="pm-info">
+                                    <h3>{p.name}</h3>
+                                    <p>{p.description}</p>
+                                </div>
+                            </div>
+                            <div className="pm-edit">
+                                <label>
+                                    Price (₹)
+                                    <input type="number" value={p._price} onChange={e => updateLocal(p._id, '_price', e.target.value)} />
+                                </label>
+                                <label>
+                                    In Stock
+                                    <input type="number" value={p._stock} onChange={e => updateLocal(p._id, '_stock', e.target.value)} />
+                                </label>
+                                <button onClick={() => saveChanges(p)} disabled={savingId === p._id}>
+                                    {savingId === p._id ? 'Saving...' : 'Save'}
+                                </button>
+                            </div>
                         </div>
                     ))}
                 </div>
