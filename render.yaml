@@ -1,0 +1,30 @@
+services:
+  # Backend API
+  - type: web
+    name: jharkhand-ecom-backend
+    env: node
+    region: singapore
+    buildCommand: cd backend && npm install
+    startCommand: cd backend && npm start
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: MONGO_URI
+        sync: false
+      - key: JWT_SECRET
+        sync: false
+      - key: STRIPE_SECRET_KEY
+        sync: false
+
+  # Frontend Web Service (with Express server for SPA routing)
+  - type: web
+    name: jharkhand-ecom-frontend
+    env: node
+    region: singapore
+    buildCommand: cd frontend && npm install && npm run build
+    startCommand: cd frontend && npm run serve
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: REACT_APP_API_URL
+        sync: false
