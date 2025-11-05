@@ -357,11 +357,36 @@ function ProductDetailPage({ products, addToCart, showNotification }) {
     const { slug } = useParams();
     const navigate = useNavigate();
     const [qty, setQty] = useState(1);
+    const [product, setProduct] = useState(null);
+    const [loading, setLoading] = useState(true);
     
     const productId = slug.split('-').pop();
-    const product = products.find(p => p._id === productId);
+
+    useEffect(() => {
+        const fetchProduct = async () => {
+            // First check if product is in the products array
+            const foundProduct = products.find(p => p._id === productId);
+            if (foundProduct) {
+                setProduct(foundProduct);
+                setLoading(false);
+            } else {
+                // If not found, fetch from API
+                try {
+                    const { data } = await axios.get(`${API_URL}/products/${productId}`);
+                    setProduct(data);
+                    setLoading(false);
+                } catch (error) {
+                    console.error('Error fetching product:', error);
+                    setLoading(false);
+                }
+            }
+        };
+        
+        fetchProduct();
+    }, [productId, products]);
     
-    if(!product) return <div>Loading...</div>;
+    if(loading) return <div className="page-container"><p>Loading...</p></div>;
+    if(!product) return <div className="page-container"><p>Product not found.</p></div>;
 
     const handleAddToCart = () => {
         addToCart(product, qty);
