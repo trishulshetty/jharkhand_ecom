@@ -19,7 +19,7 @@ function Notification({ message, type }) {
 
 // --- Main App Component ---
 function App() {
-    const location = useLocation();
+    //const location = useLocation();
     const navigate = useNavigate();
     const [user, setUser] = useState(null);
     const [products, setProducts] = useState([]);
