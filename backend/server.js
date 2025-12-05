@@ -15,7 +15,8 @@ const app = express();
 // This is the crucial part that fixes the connection issue.
 const whitelist = [
     'http://localhost:3000', // for local development
-    'https://jharkhand-ecom.onrender.com' // your live frontend URL
+    'https://jharkhand-ecom.onrender.com'
+    'https://jharkhand-ecom-frontend-production.up.railway.app' // your live frontend URL
 ];
 
 const corsOptions = {
@@ -32,7 +33,9 @@ app.use(cors(corsOptions));
 // --- End of CORS Configuration ---
 
 
-app.use(express.json({ limit: '50mb' })); // Increased limit for base64 images
+app.use(express.json({ limit: '100mb' }));
+app.use(express.urlencoded({ limit: '100mb', extended: true }));
+
 
 app.get('/', (req, res) => {
     res.send('API is running...');
