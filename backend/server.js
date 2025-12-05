@@ -1,6 +1,6 @@
 import express from 'express';
 import dotenv from 'dotenv';
-import cors from 'cors'; // Make sure cors is imported
+import cors from 'cors';
 import connectDB from './config/db.js';
 import userRoutes from './routes/userRoutes.js';
 import productRoutes from './routes/productRoutes.js';
@@ -11,41 +11,53 @@ connectDB();
 
 const app = express();
 
-// --- CORS Configuration ---
-// This is the crucial part that fixes the connection issue.
+// ================ CORS CONFIGURATION (FULL + WORKING) ==================
+
 const whitelist = [
-    'http://localhost:3000', // for local development
-    'https://jharkhand-ecom.onrender.com'
-    'https://jharkhand-ecom-frontend-production.up.railway.app' // your live frontend URL
+    "http://localhost:3000",
+    "https://jharkhand-ecom.onrender.com", 
+    "https://jharkhand-ecom-frontend-production.up.railway.app"
 ];
 
+// CORS options
 const corsOptions = {
-  origin: function (origin, callback) {
-    if (whitelist.indexOf(origin) !== -1 || !origin) {
-      callback(null, true)
-    } else {
-      callback(new Error('Not allowed by CORS'))
-    }
-  }
+    origin: function (origin, callback) {
+        // Allow requests with no origin (like mobile apps, curl, Postman, preflight)
+        if (!origin) return callback(null, true);
+
+        if (whitelist.includes(origin)) {
+            callback(null, true);
+        } else {
+            console.log("❌ CORS BLOCKED:", origin);
+            callback(new Error("Not allowed by CORS"));
+        }
+    },
+    methods: ["GET", "POST", "PUT", "DELETE", "PATCH"],
+    allowedHeaders: ["Content-Type", "Authorization"],
 };
 
+// Apply CORS middleware
 app.use(cors(corsOptions));
-// --- End of CORS Configuration ---
 
+// Allow pre-flight OPTIONS requests globally
+app.options("*", cors(corsOptions));
 
-app.use(express.json({ limit: '100mb' }));
-app.use(express.urlencoded({ limit: '100mb', extended: true }));
+// ========================================================================
 
+// Increase payload limit
+app.use(express.json({ limit: "200mb" }));
+app.use(express.urlencoded({ limit: "200mb", extended: true }));
 
-app.get('/', (req, res) => {
-    res.send('API is running...');
+// Test route
+app.get("/", (req, res) => {
+    res.send("API is running...");
 });
 
-app.use('/api/users', userRoutes);
-app.use('/api/products', productRoutes);
-app.use('/api/orders', orderRoutes);
+// Routes
+app.use("/api/users", userRoutes);
+app.use("/api/products", productRoutes);
+app.use("/api/orders", orderRoutes);
 
+// Server
 const PORT = process.env.PORT || 5000;
-
-app.listen(PORT, console.log(`Server running on port ${PORT}`));
-
+app.listen(PORT, () => console.log(`Server running on port ${PORT}`));
