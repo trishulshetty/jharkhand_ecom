@@ -15,8 +15,9 @@ const app = express();
 
 const whitelist = [
     "http://localhost:3000",
-    "https://lumina-marketplace.onrender.com", 
-    "https://lumina-marketplace-frontend.up.railway.app"
+    "https://lumina-marketplace.onrender.com",
+    "https://lumina-marketplace-frontend.up.railway.app",
+    "https://jharkhand-ecom.onrender.com"
 ];
 
 // CORS options
