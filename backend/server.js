@@ -12,36 +12,31 @@ connectDB();
 const app = express();
 
 // ================ CORS CONFIGURATION (FULL + WORKING) ==================
+    const whitelist = [
+        "http://localhost:3000",
+        "https://lumina-marketplace.onrender.com",
+        "https://lumina-marketplace-frontend.up.railway.app",
+        "https://jharkhand-ecom.onrender.com"
+    ];
 
-const whitelist = [
-    "http://localhost:3000",
-    "https://lumina-marketplace.onrender.com",
-    "https://lumina-marketplace-frontend.up.railway.app",
-    "https://jharkhand-ecom.onrender.com"
-];
+    const corsOptions = {
+        origin: function (origin, callback) {
+            if (!origin) return callback(null, true);
 
-// CORS options
-const corsOptions = {
-    origin: function (origin, callback) {
-        // Allow requests with no origin (like mobile apps, curl, Postman, preflight)
-        if (!origin) return callback(null, true);
+            if (whitelist.includes(origin)) {
+                callback(null, true);
+            } else {
+                console.log("❌ CORS BLOCKED:", origin);
+                callback(new Error("Not allowed by CORS"));
+            }
+        },
+        methods: ["GET", "POST", "PUT", "DELETE", "PATCH", "OPTIONS"],
+        allowedHeaders: ["Content-Type", "Authorization"],
+        credentials: true
+    };
 
-        if (whitelist.includes(origin)) {
-            callback(null, true);
-        } else {
-            console.log("❌ CORS BLOCKED:", origin);
-            callback(new Error("Not allowed by CORS"));
-        }
-    },
-    methods: ["GET", "POST", "PUT", "DELETE", "PATCH"],
-    allowedHeaders: ["Content-Type", "Authorization"],
-};
-
-// Apply CORS middleware
-app.use(cors(corsOptions));
-
-// Allow pre-flight OPTIONS requests globally
-app.options("*", cors(corsOptions));
+    app.use(cors(corsOptions));
+    app.options(/.*/, cors(corsOptions));
 
 // ========================================================================
 
