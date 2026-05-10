@@ -314,26 +314,34 @@ function CartPage({ cart, updateCartQty, removeFromCart, user, showNotification,
 function Header({ user, onLogout, cartCount }) {
     return (
         <header className="header">
-            <Link to="/" className="logo">Jharkhand AI Tourism</Link>
-            <nav>
+            <Link to="/" className="logo">ECOM</Link>
+            <nav className="nav-links">
+                <Link to="/">Shop</Link>
+                <Link to="/">Categories</Link>
+                <Link to="/">New Arrivals</Link>
+            </nav>
+            <nav className="user-nav">
                 {user ? (
                     <>
                         {user.role === 'buyer' && (
                             <>
-                                <Link to="/cart"><button>Cart ({cartCount})</button></Link>
-                                <Link to="/my-orders"><button>My Orders</button></Link>
+                                <Link to="/cart" className="cart-link">
+                                    <span className="cart-icon">🛒</span>
+                                    <span className="cart-count">{cartCount}</span>
+                                </Link>
+                                <Link to="/my-orders">My Orders</Link>
                             </>
                         )}
                         {user.role === 'seller' && (
-                            <Link to="/seller-dashboard"><button>Dashboard</button></Link>
+                            <Link to="/seller-dashboard">Dashboard</Link>
                         )}
-                        <span>Hello, {user.name}</span>
-                        <button onClick={onLogout}>Logout</button>
+                        <span className="user-greeting">Hi, {user.name.split(' ')[0]}</span>
+                        <button onClick={onLogout} className="secondary">Logout</button>
                     </>
                 ) : (
                     <>
-                        <Link to="/login"><button>Login</button></Link>
-                        <Link to="/register"><button>Register</button></Link>
+                        <Link to="/login">Login</Link>
+                        <Link to="/register"><button>Join Now</button></Link>
                     </>
                 )}
             </nav>
@@ -343,12 +351,25 @@ function Header({ user, onLogout, cartCount }) {
 
 function HomePage({ products }) {
     return (
-        <div className="page-container">
-            <h1>Featured Products</h1>
-            <div className="product-grid">
-                {products.map((product) => (
-                    <ProductCard key={product._id} product={product} />
-                ))}
+        <div className="home-container">
+            <section className="hero-section glass">
+                <div className="hero-content">
+                    <h1>Experience Premium Shopping</h1>
+                    <p>Discover our curated collection of high-end products designed for the modern lifestyle.</p>
+                    <button className="cta-button">Shop Collection</button>
+                </div>
+            </section>
+            
+            <div className="page-container">
+                <div className="section-header">
+                    <h2>Featured Products</h2>
+                    <p>Handpicked selections just for you</p>
+                </div>
+                <div className="product-grid">
+                    {products.map((product) => (
+                        <ProductCard key={product._id} product={product} />
+                    ))}
+                </div>
             </div>
         </div>
     );
@@ -359,8 +380,10 @@ function ProductCard({ product }) {
     return (
         <Link to={`/p/${slug}`} className="card product-card">
             <img src={product.images[0]} alt={product.name} className="product-image" />
-            <h3>{product.name}</h3>
-            <p className="price">₹{product.price.toFixed(2)}</p>
+            <div className="product-card-content">
+                <h3>{product.name}</h3>
+                <p className="price">${product.price.toFixed(2)}</p>
+            </div>
         </Link>
     );
 }
@@ -416,7 +439,7 @@ function ProductDetailPage({ products, addToCart, showNotification }) {
                 </div>
                 <div className="product-detail-info">
                     <h1>{product.name}</h1>
-                    <p className="price">₹{product.price.toFixed(2)}</p>
+                    <p className="price">${product.price.toFixed(2)}</p>
                     <p>{product.description}</p>
                     <p>Status: {product.countInStock > 0 ? 'In Stock' : 'Out of Stock'}</p>
                     {product.countInStock > 0 && (
@@ -780,7 +803,7 @@ function ManageProductsPage({ user, showNotification }) {
                     {items.map(p => (
                         <div key={p._id} className="card product-manage-item">
                             <div className="pm-left">
-                                <img src={p.images?.[0]} alt={p.name} style={{ width: 80, height: 80, objectFit: 'cover', borderRadius: 6 }} />
+                                <img src={p.images?.[0]} alt={p.name} style={{ width: 80, height: 80, objectFit: 'cover' }} />
                                 <div className="pm-info">
                                     <h3>{p.name}</h3>
                                     <p>{p.description}</p>
@@ -788,7 +811,7 @@ function ManageProductsPage({ user, showNotification }) {
                             </div>
                             <div className="pm-edit">
                                 <label>
-                                    Price (₹)
+                                    Price ($)
                                     <input type="number" value={p._price} onChange={e => updateLocal(p._id, '_price', e.target.value)} />
                                 </label>
                                 <label>
@@ -810,7 +833,7 @@ function ManageProductsPage({ user, showNotification }) {
 function Footer() {
     return (
         <footer className="footer">
-            <p>&copy; {new Date().getFullYear()} Jharkhand AI Tourism. All rights reserved.</p>
+            <p>&copy; {new Date().getFullYear()} ECOM. All rights reserved.</p>
         </footer>
     );
 }
